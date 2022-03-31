@@ -1,38 +1,46 @@
 package lekce_309;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class EchoTimeClient2 implements Closeable {
+public class EchoServer2 implements Closeable {
+    private final ServerSocket server;
     private final Socket socket;
     private final Scanner input;
     private final BufferedWriter output;
 
     public static void main(String[] args) {
-        try (EchoTimeClient2 ec = new EchoTimeClient2("127.0.0.1", 10000)) {
-            ec.write("hello");
-            System.out.println(ec.read());
+        try (EchoServer2 ec = new EchoServer2(10000)) {
+            while (true) {
+                System.out.println("waiting for a message");
+                String line = ec.read();
+                System.out.println("got: " + line);
+
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public EchoTimeClient2(String name, int port) throws IOException {
-        this.socket = new Socket(name, port);
+    public EchoServer2(int port) throws IOException {
+        System.out.println("create server socket");
+        this.server = new ServerSocket(port);
+        System.out.println("listening");
+        socket = server.accept();
         this.input = new Scanner(socket.getInputStream());
         this.output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
 
     public String read() throws IOException {
-        System.out.println("reading");
         return input.nextLine();
     }
 
     public void write(String line) throws IOException {
-        System.out.println("writing");
         output.write(line);
         output.newLine();
         output.flush();
