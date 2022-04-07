@@ -6,22 +6,19 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
 public class EchoServer2 implements Closeable {
+
     private final ServerSocket server;
-    private final Socket socket;
-    private final Scanner input;
-    private final BufferedWriter output;
+    private final List<EchoServer2Worker> workers = new ArrayList<>();
 
     public static void main(String[] args) {
         try (EchoServer2 ec = new EchoServer2(10000)) {
-            while (true) {
-                System.out.println("waiting for a message");
-                String line = ec.read();
-                System.out.println("got: " + line);
-
-            }
+            ec.run();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -31,24 +28,31 @@ public class EchoServer2 implements Closeable {
         System.out.println("create server socket");
         this.server = new ServerSocket(port);
         System.out.println("listening");
-        socket = server.accept();
-        this.input = new Scanner(socket.getInputStream());
-        this.output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
 
-    public String read() throws IOException {
-        return input.nextLine();
-    }
-
-    public void write(String line) throws IOException {
-        output.write(line);
-        output.newLine();
-        output.flush();
-    }
 
     public void close() throws IOException {
-        if (socket != null) {
-            socket.close();
+        workers.forEach(worker -> {
+            try {
+                worker.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        if (server != null) {
+            server.close();
+        }
+    }
+
+    public void run() {
+        while (true) {
+            try {
+                EchoServer2Worker worker = new EchoServer2Worker(server.accept());
+                workers.add(worker);
+                worker.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

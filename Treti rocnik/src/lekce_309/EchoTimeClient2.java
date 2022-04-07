@@ -13,7 +13,7 @@ public class EchoTimeClient2 implements Closeable {
 
     public static void main(String[] args) {
         try (EchoTimeClient2 ec = new EchoTimeClient2("127.0.0.1", 10000)) {
-            ec.write("hello");
+            ec.write(new Scanner(System.in).nextLine());
             System.out.println(ec.read());
         } catch (IOException e) {
             e.printStackTrace();
